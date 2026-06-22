@@ -1,0 +1,70 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum LeaveStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+model Employee {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String   @db.VarChar(100)
+  department String  @db.VarChar(100)
+  position  String   @db.VarChar(100)
+  leaveBalance Int @default(12) @map("leave_balance")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  leaveRequests LeaveRequest[]
+
+  @@index([department])
+  @@map("employees")
+}
+
+model LeaveRequest {
+  id         String      @id @default(uuid()) @db.Uuid
+  employeeId String      @map("employee_id") @db.Uuid
+  startDate  String      @map("start_date") @db.VarChar(30)
+  endDate    String      @map("end_date") @db.VarChar(30)
+  reason     String      @db.VarChar(500)
+  status     LeaveStatus @default(PENDING)
+  createdAt  DateTime    @default(now()) @map("created_at")
+  updatedAt  DateTime    @updatedAt @map("updated_at")
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@index([employeeId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("leave_requests")
+}
+
+model ActivityLog {
+  id          String   @id @default(uuid()) @db.Uuid
+  action      String   @db.VarChar(50)
+  category    String   @db.VarChar(30)
+  description String   @db.VarChar(500)
+  userId      String?  @map("user_id") @db.VarChar(100)
+  userName    String?  @map("user_name") @db.VarChar(100)
+  targetId    String?  @map("target_id") @db.VarChar(100)
+  targetName  String?  @map("target_name") @db.VarChar(200)
+  metadata    String?  @db.Text
+  ipAddress   String?  @map("ip_address") @db.VarChar(50)
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([category])
+  @@index([action])
+  @@index([createdAt])
+  @@index([userId])
+  @@map("activity_logs")
+}
