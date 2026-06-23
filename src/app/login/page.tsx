@@ -7,10 +7,11 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, LogIn, Sparkles } from "lucide-react";
+import { Loader2, LogIn, Sparkles, FileCheck } from "lucide-react";
 import { useState, useEffect, Suspense } from "react";
 import { toast } from "sonner";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 
 function LoginErrorHandler() {
   const searchParams = useSearchParams();
@@ -127,6 +128,15 @@ export default function LoginPage() {
           </form>
         </div>
 
+        {/* Report Link */}
+        <div className="flex justify-center mt-4 animate-fade-in-up" style={{ animationDelay: "200ms" }}>
+          <Link href="/report">
+            <Button variant="outline" className="rounded-xl gap-2 bg-background/40 border-border/50 backdrop-blur-sm hover:bg-background/60 transition-all">
+              <FileCheck className="h-4 w-4" />
+              View Audit Report
+            </Button>
+          </Link>
+        </div>
 
       </div>
     </div>
