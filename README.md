@@ -1,4 +1,4 @@
-# 🌴 Leavely — Employee Leave Management Platform
+# Leavely — Employee Leave Management Platform
 
 > Modern, premium employee leave management system with role-based access control, glassmorphism UI, and full audit logging.
 
