@@ -19,7 +19,11 @@ function LoginErrorHandler() {
     const error = searchParams.get("error");
     if (error === "expired") {
       toast.error("Session expired", {
-        description: "Please sign in again.",
+        description: "Your session has expired. Please sign in again.",
+      });
+    } else if (error === "idle") {
+      toast.warning("Logged out due to inactivity", {
+        description: "You were inactive for too long. Please sign in again.",
       });
     }
   }, [searchParams]);

@@ -2,10 +2,14 @@
 
 import { AuthGuard } from "@/components/shared/auth-guard";
 import { Sidebar, TopNavbar, NavbarProvider, useSidebar } from "@/components/shared/navbar";
+import { useSessionManager } from "@/hooks/use-session-manager";
 import { cn } from "@/lib/utils";
 
 function ProtectedContent({ children }: { children: React.ReactNode }) {
   const { collapsed } = useSidebar();
+
+  // Session lifecycle manager: expiry check, idle timeout, auto-extend, multi-tab sync
+  useSessionManager();
   return (
     <div className="flex min-h-screen">
       <Sidebar />

@@ -48,6 +48,12 @@ export const ROUTE_PERMISSIONS: Record<string, RoleName[]> = {
 // Session duration: 24 hours
 export const SESSION_DURATION_MS = 24 * 60 * 60 * 1000;
 
+// Session idle timeout: 30 minutes of inactivity triggers logout
+export const SESSION_IDLE_TIMEOUT_MS = 30 * 60 * 1000;
+
+// Session warning: Show warning 5 minutes before expiry
+export const SESSION_WARNING_THRESHOLD_MS = 5 * 60 * 1000;
+
 export const AUTH_COOKIE_NAME = "auth_session";
 
 // Default leave balance per year
