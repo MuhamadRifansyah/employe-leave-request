@@ -4,7 +4,7 @@ import { AUTH_COOKIE_NAME, ROUTE_PERMISSIONS } from "@/constants";
 import type { RoleName } from "@/constants";
 
 // Routes that don't require authentication
-const PUBLIC_ROUTES = ["/login", "/report"];
+const PUBLIC_ROUTES = ["/login"];
 
 function parseAuthCookie(
   cookieValue: string
@@ -45,13 +45,43 @@ export function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Allow static assets and API routes
-  if (
-    pathname.startsWith("/_next") ||
-    pathname.startsWith("/api") ||
-    pathname.includes(".")
-  ) {
+  // Allow static assets
+  if (pathname.startsWith("/_next") || pathname.includes(".")) {
     return NextResponse.next();
+  }
+
+  // Handle API routes — inject auth headers or reject
+  if (pathname.startsWith("/api")) {
+    // Public API routes that don't need auth
+    const PUBLIC_API_ROUTES = ["/api/activity/auth", "/api/health"];
+    if (PUBLIC_API_ROUTES.some((route) => pathname === route || pathname.startsWith(route + "/"))) {
+      return NextResponse.next();
+    }
+
+    const apiAuthCookie = request.cookies.get(AUTH_COOKIE_NAME);
+    if (!apiAuthCookie?.value) {
+      return NextResponse.json(
+        { error: "Authentication required" },
+        { status: 401 }
+      );
+    }
+
+    const apiSession = parseAuthCookie(apiAuthCookie.value);
+    if (!apiSession || new Date(apiSession.expiresAt) < new Date()) {
+      return NextResponse.json(
+        { error: "Session expired" },
+        { status: 401 }
+      );
+    }
+
+    // Inject auth context as headers for API route handlers
+    const requestHeaders = new Headers(request.headers);
+    requestHeaders.set("x-user-id", apiSession.userId);
+    requestHeaders.set("x-user-role", apiSession.role);
+
+    return NextResponse.next({
+      request: { headers: requestHeaders },
+    });
   }
 
   // Check auth cookie

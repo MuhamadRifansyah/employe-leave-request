@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/select";
 import { Loader2, ArrowLeft, AlertCircle } from "lucide-react";
 import { useState, useEffect } from "react";
+import { useFormUnsaved } from "@/hooks/use-form-unsaved";
 import { employeeApi } from "@/services/employee-storage";
 import type { Employee } from "@/types";
 import Link from "next/link";
@@ -42,11 +43,13 @@ export function LeaveForm({ onSubmit }: LeaveFormProps) {
     register,
     handleSubmit,
     setValue,
-    formState: { errors },
+    formState: { errors, isDirty },
   } = useForm<LeaveRequestFormData>({
     resolver: zodResolver(leaveRequestSchema),
     defaultValues: { employeeId: "", startDate: "", endDate: "", reason: "" },
   });
+
+  useFormUnsaved(isDirty);
 
   const handleFormSubmit = async (data: LeaveRequestFormData) => {
     setIsSubmitting(true);

@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { Loader2, ArrowLeft } from "lucide-react";
 import { useState } from "react";
+import { useFormUnsaved } from "@/hooks/use-form-unsaved";
 import Link from "next/link";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -25,11 +26,13 @@ export function EmployeeForm({ defaultValues, onSubmit, isEditing = false }: Emp
   const {
     register,
     handleSubmit,
-    formState: { errors },
+    formState: { errors, isDirty },
   } = useForm<EmployeeFormData>({
     resolver: zodResolver(employeeSchema),
     defaultValues: defaultValues || { name: "", department: "", position: "" },
   });
+
+  useFormUnsaved(isDirty);
 
   const handleFormSubmit = async (data: EmployeeFormData) => {
     setIsSubmitting(true);

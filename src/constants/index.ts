@@ -37,11 +37,12 @@ export const ROUTE_PERMISSIONS: Record<string, RoleName[]> = {
   // Admin + Manager
   "/leave": ["ADMIN", "MANAGER"],
   "/leave/new": ["ADMIN", "MANAGER"],
+  "/leave/edit": ["ADMIN", "MANAGER", "EMPLOYEE"],
 
   // Employee only
-  "/my-leave": ["EMPLOYEE"],
-  "/my-leave/new": ["EMPLOYEE"],
-  "/profile": ["EMPLOYEE"],
+  "/my-leave": ["EMPLOYEE", "MANAGER"],
+  "/my-leave/new": ["EMPLOYEE", "MANAGER"],
+  "/profile": ["EMPLOYEE", "MANAGER"],
 };
 
 // Session duration: 24 hours

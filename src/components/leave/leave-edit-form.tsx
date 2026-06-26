@@ -14,6 +14,7 @@ import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import type { LeaveRequest } from "@/types";
 import { Loader2, ArrowLeft, User, Building2, Ban } from "lucide-react";
 import { useState } from "react";
+import { useFormUnsaved } from "@/hooks/use-form-unsaved";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { calculateDuration } from "@/lib/utils";
@@ -56,6 +57,8 @@ export function LeaveEditForm({
       reason: request.reason,
     },
   });
+
+  useFormUnsaved(isDirty);
 
   const watchStart = watch("startDate");
   const watchEnd = watch("endDate");

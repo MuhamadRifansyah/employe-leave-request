@@ -24,7 +24,7 @@ export function saveSession(session: AuthSession): void {
       })
     );
     const expires = new Date(session.expiresAt).toUTCString();
-    document.cookie = `${AUTH_COOKIE_NAME}=${cookieValue}; path=/; expires=${expires}; SameSite=Lax`;
+    document.cookie = `${AUTH_COOKIE_NAME}=${cookieValue}; path=/; expires=${expires}; SameSite=Strict`;
   }
 }
 
@@ -55,7 +55,7 @@ export function clearSession(): void {
   storage.remove(STORAGE_KEYS.AUTH_SESSION);
 
   if (typeof document !== "undefined") {
-    document.cookie = `${AUTH_COOKIE_NAME}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax`;
+    document.cookie = `${AUTH_COOKIE_NAME}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Strict`;
   }
 }
 

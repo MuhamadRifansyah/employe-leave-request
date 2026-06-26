@@ -14,7 +14,7 @@ function ProtectedContent({ children }: { children: React.ReactNode }) {
         collapsed ? "md:ml-[68px]" : "md:ml-60"
       )}>
         <TopNavbar />
-        <main className="flex-1 gradient-mesh">
+        <main id="main-content" className="flex-1 gradient-mesh">
           <div className="p-4 md:p-8 max-w-7xl mx-auto">
             {children}
           </div>

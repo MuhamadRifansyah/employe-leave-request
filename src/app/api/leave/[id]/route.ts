@@ -3,12 +3,16 @@ import { prisma } from "@/lib/prisma";
 import { serialize } from "@/lib/serialize";
 import { LeaveStatus } from "@prisma/client";
 import { ActivityLogger } from "@/lib/activity-logger";
+import { requireAuth, requireRole } from "@/lib/api-auth";
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const auth = requireAuth(request);
+    if (auth instanceof NextResponse) return auth;
+
     const { id } = await params;
 
     const leaveRequest = await prisma.leaveRequest.findUnique({
@@ -47,6 +51,9 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const auth = requireAuth(request);
+    if (auth instanceof NextResponse) return auth;
+
     const { id } = await params;
     const body = await request.json();
 
@@ -73,6 +80,16 @@ export async function PATCH(
     // Status update
     if (body.status) {
       const { status } = body;
+
+      // Approve/Reject requires ADMIN or MANAGER role
+      if (status === LeaveStatus.APPROVED || status === LeaveStatus.REJECTED) {
+        if (!['ADMIN', 'MANAGER'].includes(auth.role)) {
+          return NextResponse.json(
+            { error: "Only admins and managers can approve or reject leave requests" },
+            { status: 403 }
+          );
+        }
+      }
 
       if (existing.status !== LeaveStatus.PENDING) {
         return NextResponse.json(
@@ -114,7 +131,11 @@ export async function PATCH(
         const [updatedRequest] = await prisma.$transaction([
           prisma.leaveRequest.update({
             where: { id },
-            data: { status: LeaveStatus.APPROVED },
+            data: {
+              status: LeaveStatus.APPROVED,
+              reviewedBy: auth.userId,
+              reviewedAt: new Date(),
+            },
           }),
           prisma.employee.update({
             where: { id: existing.employee.id },
@@ -130,7 +151,14 @@ export async function PATCH(
       // REJECTED or CANCELLED
       const updatedRequest = await prisma.leaveRequest.update({
         where: { id },
-        data: { status: status as LeaveStatus },
+        data: {
+          status: status as LeaveStatus,
+          ...(status === LeaveStatus.REJECTED && {
+            rejectionReason: body.rejectionReason || null,
+            reviewedBy: auth.userId,
+            reviewedAt: new Date(),
+          }),
+        },
       });
 
       if (status === LeaveStatus.REJECTED) {
@@ -180,6 +208,9 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const auth = requireRole(request, ["ADMIN"]);
+    if (auth instanceof NextResponse) return auth;
+
     const { id } = await params;
 
     const existing = await prisma.leaveRequest.findUnique({

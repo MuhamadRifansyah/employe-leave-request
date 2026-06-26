@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { serialize, serializeArray } from "@/lib/serialize";
 import { LeaveStatus } from "@prisma/client";
+import { requireRole } from "@/lib/api-auth";
 
 // Helper: calculate number of days between two date strings (inclusive)
 function calculateDays(startDate: string, endDate: string): number {
@@ -278,6 +279,9 @@ async function getDepartmentReport() {
 // ---------- GET Handler ----------
 export async function GET(request: NextRequest) {
   try {
+    const auth = requireRole(request, ["ADMIN"]);
+    if (auth instanceof NextResponse) return auth;
+
     const { searchParams } = new URL(request.url);
     const type = searchParams.get("type");
     const month = searchParams.get("month") || undefined;

@@ -48,9 +48,9 @@ const allNavItems: NavItem[] = [
   // Admin only
   { label: "Activity Logs", href: "/activity", icon: ClipboardList, roles: [ROLES.ADMIN] },
 
-  // Employee only
-  { label: "My Leave", href: "/my-leave", icon: CalendarDays, roles: [ROLES.EMPLOYEE] },
-  { label: "Profile", href: "/profile", icon: UserCircle, roles: [ROLES.EMPLOYEE] },
+  // Employee + Manager
+  { label: "My Leave", href: "/my-leave", icon: CalendarDays, roles: [ROLES.EMPLOYEE, ROLES.MANAGER] },
+  { label: "Profile", href: "/profile", icon: UserCircle, roles: [ROLES.EMPLOYEE, ROLES.MANAGER] },
 ];
 
 type SidebarContextType = { collapsed: boolean; setCollapsed: (v: boolean) => void };
@@ -87,7 +87,7 @@ export function TopNavbar() {
           <div className="md:hidden">
             <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
               <SheetTrigger
-                render={<Button variant="ghost" size="icon" className="rounded-full" />}
+                render={<Button variant="ghost" size="icon" className="rounded-full" aria-label="Open navigation menu" />}
               >
                 <Menu className="h-5 w-5" />
               </SheetTrigger>
@@ -109,6 +109,7 @@ export function TopNavbar() {
                         key={item.href}
                         href={item.href}
                         onClick={() => setMobileOpen(false)}
+                        aria-current={isActive ? "page" : undefined}
                         className={cn(
                           "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200",
                           isActive
@@ -154,6 +155,7 @@ export function TopNavbar() {
               size="icon"
               className="rounded-full text-muted-foreground hover:text-destructive"
               onClick={logout}
+              aria-label="Log out"
             >
               <LogOut className="h-4 w-4" />
             </Button>
@@ -206,6 +208,7 @@ export function Sidebar() {
               key={item.href}
               href={item.href}
               title={collapsed ? item.label : undefined}
+              aria-current={isActive ? "page" : undefined}
               className={cn(
                 "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 group relative",
                 isActive
@@ -236,6 +239,7 @@ export function Sidebar() {
           size="icon"
           className={cn("w-full rounded-xl text-muted-foreground", collapsed ? "" : "justify-start gap-3 px-3")}
           onClick={() => setCollapsed(!collapsed)}
+          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
           {collapsed ? <ChevronsRight className="h-4 w-4" /> : <ChevronsLeft className="h-4 w-4" />}
           {!collapsed && <span className="text-sm">Collapse</span>}

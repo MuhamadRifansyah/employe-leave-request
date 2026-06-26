@@ -2,9 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { serialize, serializeArray } from "@/lib/serialize";
 import { ActivityLogger } from "@/lib/activity-logger";
+import { requireAuth, requireRole } from "@/lib/api-auth";
 
 export async function GET(request: NextRequest) {
   try {
+    const auth = requireAuth(request);
+    if (auth instanceof NextResponse) return auth;
+
     const { searchParams } = new URL(request.url);
     const search = searchParams.get("search");
     const page = parseInt(searchParams.get("page") || "1", 10);
@@ -59,6 +63,9 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const auth = requireRole(request, ["ADMIN"]);
+    if (auth instanceof NextResponse) return auth;
+
     const body = await request.json();
     const { name, department, position } = body;
 

@@ -158,20 +158,38 @@ function ExportToolbar({
 
 function MonthlyReport({ data }: { data: MonthlyRow[] }) {
 
+  const monthlyColumns = [
+    { key: "monthLabel", label: "Month", width: "25%" },
+    { key: "total", label: "Total", width: "15%", align: "right" as const, isNumber: true },
+    { key: "approved", label: "Approved", width: "15%", align: "right" as const, isNumber: true },
+    { key: "rejected", label: "Rejected", width: "15%", align: "right" as const, isNumber: true },
+    { key: "pending", label: "Pending", width: "15%", align: "right" as const, isNumber: true },
+    { key: "cancelled", label: "Cancelled", width: "15%", align: "right" as const, isNumber: true },
+  ];
+
   const handleExportExcel = () => {
-    exportToExcel(data as unknown as Record<string, unknown>[], "monthly-leave-report", "Monthly");
+    const rows = data.map((d) => ({
+      monthLabel: d.monthLabel,
+      total: d.total,
+      approved: d.approved,
+      rejected: d.rejected,
+      pending: d.pending,
+      cancelled: d.cancelled,
+    }));
+    exportToExcel(rows as unknown as Record<string, unknown>[], "monthly-leave-report", "Monthly", monthlyColumns);
     toast.success("Excel report downloaded");
   };
 
   const handleExportPdf = () => {
-    exportToPdf(data as unknown as Record<string, unknown>[], "monthly-leave-report", "Monthly Leave Report", [
-      { key: "monthLabel", label: "Month" },
-      { key: "total", label: "Total" },
-      { key: "approved", label: "Approved" },
-      { key: "rejected", label: "Rejected" },
-      { key: "pending", label: "Pending" },
-      { key: "cancelled", label: "Cancelled" },
-    ]);
+    const rows = data.map((d) => ({
+      monthLabel: d.monthLabel,
+      total: d.total,
+      approved: d.approved,
+      rejected: d.rejected,
+      pending: d.pending,
+      cancelled: d.cancelled,
+    }));
+    exportToPdf(rows as unknown as Record<string, unknown>[], "monthly-leave-report", "Monthly Leave Report", monthlyColumns);
     toast.success("PDF report opened for printing");
   };
 
@@ -273,38 +291,47 @@ function EmployeeReport({
     return result;
   }, [data, search, deptFilter]);
 
+  const employeeColumns = [
+    { key: "name", label: "Employee Name", width: "20%" },
+    { key: "department", label: "Department", width: "14%" },
+    { key: "position", label: "Position", width: "14%" },
+    { key: "leaveBalance", label: "Balance", width: "8%", align: "right" as const, isNumber: true },
+    { key: "totalRequests", label: "Requests", width: "8%", align: "right" as const, isNumber: true },
+    { key: "approved", label: "Approved", width: "8%", align: "right" as const, isNumber: true },
+    { key: "rejected", label: "Rejected", width: "8%", align: "right" as const, isNumber: true },
+    { key: "pending", label: "Pending", width: "8%", align: "right" as const, isNumber: true },
+    { key: "totalDaysUsed", label: "Days Used", width: "8%", align: "right" as const, isNumber: true },
+  ];
+
   const handleExportExcel = () => {
     const rows = filtered.map((e) => ({
-      Name: e.name,
-      Department: e.department,
-      Position: e.position,
-      "Leave Balance": e.leaveBalance,
-      "Total Requests": e.totalRequests,
-      Approved: e.approved,
-      Rejected: e.rejected,
-      Pending: e.pending,
-      Cancelled: e.cancelled,
-      "Days Used": e.totalDaysUsed,
+      name: e.name,
+      department: e.department,
+      position: e.position,
+      leaveBalance: e.leaveBalance,
+      totalRequests: e.totalRequests,
+      approved: e.approved,
+      rejected: e.rejected,
+      pending: e.pending,
+      totalDaysUsed: e.totalDaysUsed,
     }));
-    exportToExcel(rows as unknown as Record<string, unknown>[], "employee-leave-report");
+    exportToExcel(rows as unknown as Record<string, unknown>[], "employee-leave-report", "Employees", employeeColumns);
     toast.success("Excel report downloaded");
   };
 
   const handleExportPdf = () => {
-    exportToPdf(
-      filtered as unknown as Record<string, unknown>[],
-      "employee-leave-report",
-      "Employee Leave Summary",
-      [
-        { key: "name", label: "Name" },
-        { key: "department", label: "Department" },
-        { key: "leaveBalance", label: "Balance" },
-        { key: "totalRequests", label: "Requests" },
-        { key: "approved", label: "Approved" },
-        { key: "rejected", label: "Rejected" },
-        { key: "totalDaysUsed", label: "Days Used" },
-      ]
-    );
+    const rows = filtered.map((e) => ({
+      name: e.name,
+      department: e.department,
+      position: e.position,
+      leaveBalance: e.leaveBalance,
+      totalRequests: e.totalRequests,
+      approved: e.approved,
+      rejected: e.rejected,
+      pending: e.pending,
+      totalDaysUsed: e.totalDaysUsed,
+    }));
+    exportToPdf(rows as unknown as Record<string, unknown>[], "employee-leave-report", "Employee Leave Summary", employeeColumns);
     toast.success("PDF report opened for printing");
   };
 
@@ -401,37 +428,47 @@ function EmployeeReport({
 /* ──────────────────────────── Department Report ──────────────────────────── */
 
 function DepartmentReport({ data }: { data: DepartmentRow[] }) {
+  const deptColumns = [
+    { key: "department", label: "Department", width: "18%" },
+    { key: "totalEmployees", label: "Employees", width: "10%", align: "right" as const, isNumber: true },
+    { key: "totalLeaveBalance", label: "Total Balance", width: "12%", align: "right" as const, isNumber: true },
+    { key: "avgBalancePerEmployee", label: "Avg Balance", width: "12%", align: "right" as const, isNumber: true },
+    { key: "totalRequests", label: "Requests", width: "10%", align: "right" as const, isNumber: true },
+    { key: "approved", label: "Approved", width: "10%", align: "right" as const, isNumber: true },
+    { key: "rejected", label: "Rejected", width: "10%", align: "right" as const, isNumber: true },
+    { key: "pending", label: "Pending", width: "8%", align: "right" as const, isNumber: true },
+    { key: "totalDaysUsed", label: "Days Used", width: "10%", align: "right" as const, isNumber: true },
+  ];
+
   const handleExportExcel = () => {
     const rows = data.map((d) => ({
-      Department: d.department,
-      Employees: d.totalEmployees,
-      "Total Balance": d.totalLeaveBalance,
-      "Avg Balance": d.avgBalancePerEmployee,
-      "Total Requests": d.totalRequests,
-      Approved: d.approved,
-      Rejected: d.rejected,
-      Pending: d.pending,
-      "Days Used": d.totalDaysUsed,
+      department: d.department,
+      totalEmployees: d.totalEmployees,
+      totalLeaveBalance: d.totalLeaveBalance,
+      avgBalancePerEmployee: d.avgBalancePerEmployee,
+      totalRequests: d.totalRequests,
+      approved: d.approved,
+      rejected: d.rejected,
+      pending: d.pending,
+      totalDaysUsed: d.totalDaysUsed,
     }));
-    exportToExcel(rows as unknown as Record<string, unknown>[], "department-leave-report");
+    exportToExcel(rows as unknown as Record<string, unknown>[], "department-leave-report", "Department", deptColumns);
     toast.success("Excel report downloaded");
   };
 
   const handleExportPdf = () => {
-    exportToPdf(
-      data as unknown as Record<string, unknown>[],
-      "department-leave-report",
-      "Department Leave Summary",
-      [
-        { key: "department", label: "Department" },
-        { key: "totalEmployees", label: "Employees" },
-        { key: "totalLeaveBalance", label: "Total Balance" },
-        { key: "avgBalancePerEmployee", label: "Avg Balance" },
-        { key: "totalRequests", label: "Requests" },
-        { key: "approved", label: "Approved" },
-        { key: "totalDaysUsed", label: "Days Used" },
-      ]
-    );
+    const rows = data.map((d) => ({
+      department: d.department,
+      totalEmployees: d.totalEmployees,
+      totalLeaveBalance: d.totalLeaveBalance,
+      avgBalancePerEmployee: d.avgBalancePerEmployee,
+      totalRequests: d.totalRequests,
+      approved: d.approved,
+      rejected: d.rejected,
+      pending: d.pending,
+      totalDaysUsed: d.totalDaysUsed,
+    }));
+    exportToPdf(rows as unknown as Record<string, unknown>[], "department-leave-report", "Department Leave Summary", deptColumns);
     toast.success("PDF report opened for printing");
   };
 
