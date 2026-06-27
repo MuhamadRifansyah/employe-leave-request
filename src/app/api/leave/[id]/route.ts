@@ -169,8 +169,15 @@ export async function PATCH(
       return NextResponse.json({ data: serialize(updatedRequest) });
     }
 
-    // Field edit
+    // Field edit - only ADMIN/MANAGER can edit
     if (body.startDate || body.endDate || body.reason) {
+      if (!['ADMIN', 'MANAGER'].includes(auth.role)) {
+        return NextResponse.json(
+          { error: "Only admins and managers can edit leave requests" },
+          { status: 403 }
+        );
+      }
+
       if (existing.status !== LeaveStatus.PENDING) {
         return NextResponse.json(
           { error: "Only pending requests can be edited" },

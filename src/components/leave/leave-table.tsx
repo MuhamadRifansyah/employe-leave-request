@@ -25,6 +25,7 @@ interface LeaveTableProps {
   onDelete: (id: string) => void;
   onCancel?: (id: string) => void;
   canApproveReject?: boolean;
+  canDelete?: boolean;
   editBasePath?: string;
 }
 
@@ -36,6 +37,7 @@ export function LeaveTable({
   onDelete,
   onCancel,
   canApproveReject = true,
+  canDelete = false,
   editBasePath = "/leave/edit",
 }: LeaveTableProps) {
   const employeeMap = useMemo(() => {
@@ -175,30 +177,32 @@ export function LeaveTable({
                       href={`${editBasePath}/${request.id}`}
                       className={cn(
                         buttonVariants({ variant: "ghost", size: "icon" }),
-                        "h-7 w-7 rounded-lg text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity"
+                        "h-7 w-7 rounded-lg text-muted-foreground opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
                       )}
                     >
                       {isPending ? <Pencil className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
                     </Link>
 
                     {/* Delete — admin only, always on hover */}
-                    <ConfirmDialog
-                      trigger={
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7 rounded-lg text-muted-foreground hover:text-rose-600 hover:bg-rose-500/10 opacity-0 group-hover:opacity-100 transition-opacity"
-                          aria-label="Delete leave request"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
-                      }
-                      title="Delete Leave Request"
-                      description={`Permanently delete ${empName}'s leave request? This action cannot be undone.`}
-                      confirmLabel="Delete"
-                      variant="destructive"
-                      onConfirm={() => onDelete(request.id)}
-                    />
+                    {canDelete && (
+                      <ConfirmDialog
+                        trigger={
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 rounded-lg text-muted-foreground hover:text-rose-600 hover:bg-rose-500/10 opacity-0 group-hover:opacity-100 transition-opacity"
+                            aria-label="Delete leave request"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        }
+                        title="Delete Leave Request"
+                        description={`Permanently delete ${empName}'s leave request? This action cannot be undone.`}
+                        confirmLabel="Delete"
+                        variant="destructive"
+                        onConfirm={() => onDelete(request.id)}
+                      />
+                    )}
                   </div>
                 </TableCell>
               </TableRow>

@@ -130,7 +130,7 @@ export function EmployeeTable({
               </TableCell>
               <TableCell className="text-muted-foreground">{employee.position}</TableCell>
               <TableCell className="text-right">
-                <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                <div className="flex justify-end gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-200">
                   <Link
                     href={`/employees/edit/${employee.id}`}
                     className={cn(buttonVariants({ variant: "ghost", size: "icon" }), "h-8 w-8 rounded-lg")}

@@ -127,6 +127,7 @@ export default function LeavePage() {
           onDelete={deleteRequest}
           onCancel={cancelRequest}
           canApproveReject={canApproveReject}
+          canDelete={isAdmin}
         />
       ) : (
         <LeaveCalendar

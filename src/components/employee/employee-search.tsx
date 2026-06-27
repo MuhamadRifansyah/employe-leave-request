@@ -3,7 +3,7 @@
 import { Input } from "@/components/ui/input";
 import { Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import { cn } from "@/lib/utils";
 
 interface EmployeeSearchProps {
@@ -14,6 +14,11 @@ export function EmployeeSearch({ onSearch }: EmployeeSearchProps) {
   const [value, setValue] = useState("");
   const [focused, setFocused] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const [isMac, setIsMac] = useState(false);
+
+  useEffect(() => {
+    setIsMac(navigator.platform?.toUpperCase().includes("MAC") ?? false);
+  }, []);
 
   useEffect(() => {
     const timer = setTimeout(() => onSearch(value), 300);
@@ -62,7 +67,11 @@ export function EmployeeSearch({ onSearch }: EmployeeSearchProps) {
           </Button>
         ) : (
           <kbd className="hidden sm:inline-flex items-center gap-0.5 rounded-md border border-border/60 bg-muted/50 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
-            <span className="text-xs">⌘</span>K
+            {isMac ? (
+              <><span className="text-xs">⌘</span>K</>
+            ) : (
+              <>Ctrl+K</>
+            )}
           </kbd>
         )}
       </div>

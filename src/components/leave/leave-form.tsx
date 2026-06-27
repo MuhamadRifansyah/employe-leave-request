@@ -1,5 +1,7 @@
 "use client";
 
+import { toast } from "sonner";
+
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { leaveRequestSchema, type LeaveRequestFormData } from "@/validators/leave-validator";
@@ -25,9 +27,10 @@ import { cn } from "@/lib/utils";
 
 interface LeaveFormProps {
   onSubmit: (data: LeaveRequestFormData) => void | Promise<void>;
+  backHref?: string;
 }
 
-export function LeaveForm({ onSubmit }: LeaveFormProps) {
+export function LeaveForm({ onSubmit, backHref = "/leave" }: LeaveFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [isLoadingEmployees, setIsLoadingEmployees] = useState(true);
@@ -36,7 +39,10 @@ export function LeaveForm({ onSubmit }: LeaveFormProps) {
     employeeApi.getAll({ pageSize: 1000 }).then((result) => {
       setEmployees(result.data);
       setIsLoadingEmployees(false);
-    }).catch(() => setIsLoadingEmployees(false));
+    }).catch(() => {
+      setIsLoadingEmployees(false);
+      toast.error("Failed to load employees");
+    });
   }, []);
 
   const {
@@ -60,6 +66,16 @@ export function LeaveForm({ onSubmit }: LeaveFormProps) {
     }
   };
 
+  if (isLoadingEmployees) {
+    return (
+      <Card className="max-w-2xl border-border/50 bg-card/80 backdrop-blur-sm animate-fade-in-up">
+        <div className="p-8 flex justify-center">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        </div>
+      </Card>
+    );
+  }
+
   if (employees.length === 0) {
     return (
       <Card className="max-w-2xl border-border/50 bg-card/80 backdrop-blur-sm animate-fade-in-up">
@@ -70,14 +86,8 @@ export function LeaveForm({ onSubmit }: LeaveFormProps) {
             </div>
             <h3 className="text-lg font-semibold">No Employees Available</h3>
             <p className="text-sm text-muted-foreground">
-              Add at least one employee before creating a leave request.
+              No employees found. Please contact an administrator.
             </p>
-            <Link
-              href="/employees/new"
-              className={cn(buttonVariants(), "mt-2 rounded-xl shadow-lg shadow-primary/20")}
-            >
-              Add Employee
-            </Link>
           </div>
         </div>
       </Card>
@@ -159,7 +169,7 @@ export function LeaveForm({ onSubmit }: LeaveFormProps) {
 
           <div className="flex items-center gap-3 pt-4 border-t border-border/30">
             <Link
-              href="/leave"
+              href={backHref}
               className={cn(buttonVariants({ variant: "ghost" }), "rounded-xl")}
             >
               <ArrowLeft className="mr-2 h-4 w-4" />

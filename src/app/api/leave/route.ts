@@ -111,6 +111,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Check sufficient leave balance
+    if (employee.leaveBalance < leaveDuration) {
+      return NextResponse.json(
+        { error: `Insufficient leave balance. Available: ${employee.leaveBalance} days, Requested: ${leaveDuration} days` },
+        { status: 400 }
+      );
+    }
+
     // Check for overlapping leave requests (PENDING or APPROVED)
     const existingLeaves = await prisma.leaveRequest.findMany({
       where: {
