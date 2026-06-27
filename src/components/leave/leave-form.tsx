@@ -28,14 +28,23 @@ import { cn } from "@/lib/utils";
 interface LeaveFormProps {
   onSubmit: (data: LeaveRequestFormData) => void | Promise<void>;
   backHref?: string;
+  /** When provided, the employee dropdown is hidden and this ID is used directly. */
+  fixedEmployeeId?: string;
+  /** Name of the fixed employee, shown instead of the dropdown. */
+  fixedEmployeeName?: string;
 }
 
-export function LeaveForm({ onSubmit, backHref = "/leave" }: LeaveFormProps) {
+export function LeaveForm({ onSubmit, backHref = "/leave", fixedEmployeeId, fixedEmployeeName }: LeaveFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [isLoadingEmployees, setIsLoadingEmployees] = useState(true);
 
   useEffect(() => {
+    if (fixedEmployeeId) {
+      // In self-mode, skip loading employees
+      setIsLoadingEmployees(false);
+      return;
+    }
     employeeApi.getAll({ pageSize: 1000 }).then((result) => {
       setEmployees(result.data);
       setIsLoadingEmployees(false);
@@ -43,7 +52,7 @@ export function LeaveForm({ onSubmit, backHref = "/leave" }: LeaveFormProps) {
       setIsLoadingEmployees(false);
       toast.error("Failed to load employees");
     });
-  }, []);
+  }, [fixedEmployeeId]);
 
   const {
     register,
@@ -52,7 +61,7 @@ export function LeaveForm({ onSubmit, backHref = "/leave" }: LeaveFormProps) {
     formState: { errors, isDirty },
   } = useForm<LeaveRequestFormData>({
     resolver: zodResolver(leaveRequestSchema),
-    defaultValues: { employeeId: "", startDate: "", endDate: "", reason: "" },
+    defaultValues: { employeeId: fixedEmployeeId || "", startDate: "", endDate: "", reason: "" },
   });
 
   useFormUnsaved(isDirty);
@@ -99,29 +108,40 @@ export function LeaveForm({ onSubmit, backHref = "/leave" }: LeaveFormProps) {
       <div className="p-6 md:p-8">
         <div className="mb-6">
           <h2 className="text-lg font-semibold tracking-tight">New Leave Request</h2>
-          <p className="text-sm text-muted-foreground mt-1">Submit a leave request for a team member.</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            {fixedEmployeeId ? "Submit a leave request for yourself." : "Submit a leave request for a team member."}
+          </p>
         </div>
 
         <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-5">
-          <div className="space-y-2">
-            <Label htmlFor="employeeId" className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Employee</Label>
-            <Select onValueChange={(value) => setValue("employeeId", value as string)}>
-              <SelectTrigger className={cn(
-                "h-11 rounded-xl bg-background/60 border-border/50",
-                errors.employeeId && "border-destructive"
-              )}>
-                <SelectValue placeholder="Select an employee" />
-              </SelectTrigger>
-              <SelectContent>
-                {employees.map((emp) => (
-                  <SelectItem key={emp.id} value={emp.id}>
-                    {emp.name} — {emp.department}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {errors.employeeId && <p className="text-xs text-destructive">{errors.employeeId.message}</p>}
-          </div>
+          {fixedEmployeeId ? (
+            <div className="space-y-2">
+              <Label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Employee</Label>
+              <div className="h-11 rounded-xl bg-background/60 border border-border/50 flex items-center px-3">
+                <span className="text-sm font-medium">{fixedEmployeeName || "You"}</span>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <Label htmlFor="employeeId" className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Employee</Label>
+              <Select onValueChange={(value) => setValue("employeeId", value as string)}>
+                <SelectTrigger className={cn(
+                  "h-11 rounded-xl bg-background/60 border-border/50",
+                  errors.employeeId && "border-destructive"
+                )}>
+                  <SelectValue placeholder="Select an employee" />
+                </SelectTrigger>
+                <SelectContent>
+                  {employees.map((emp) => (
+                    <SelectItem key={emp.id} value={emp.id}>
+                      {emp.name} — {emp.department}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.employeeId && <p className="text-xs text-destructive">{errors.employeeId.message}</p>}
+            </div>
+          )}
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
