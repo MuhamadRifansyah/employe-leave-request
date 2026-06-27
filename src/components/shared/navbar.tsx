@@ -50,7 +50,7 @@ const allNavItems: NavItem[] = [
 
   // Employee + Manager
   { label: "My Leave", href: "/my-leave", icon: CalendarDays, roles: [ROLES.EMPLOYEE, ROLES.MANAGER] },
-  { label: "Profile", href: "/profile", icon: UserCircle, roles: [ROLES.EMPLOYEE, ROLES.MANAGER] },
+  { label: "Profile", href: "/profile", icon: UserCircle, roles: [ROLES.ADMIN, ROLES.EMPLOYEE, ROLES.MANAGER] },
 ];
 
 type SidebarContextType = { collapsed: boolean; setCollapsed: (v: boolean) => void };

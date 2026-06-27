@@ -167,10 +167,10 @@ export async function PATCH(
         where: { id },
         data: {
           status: status as LeaveStatus,
+          reviewedBy: auth.userId,
+          reviewedAt: new Date(),
           ...(status === LeaveStatus.REJECTED && {
             rejectionReason: body.rejectionReason || null,
-            reviewedBy: auth.userId,
-            reviewedAt: new Date(),
           }),
         },
       });

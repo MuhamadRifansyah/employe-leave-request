@@ -13,7 +13,7 @@ import type { LeaveEditFormData } from "@/validators/leave-validator";
 export default function EditLeavePage() {
   const router = useRouter();
   const params = useParams();
-  const { isAdmin, isManager } = useAuth();
+  const { isAdmin, isManager, session } = useAuth();
   const [request, setRequest] = useState<(LeaveRequest & { employee?: { name: string; department: string; leaveBalance: number } }) | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -23,6 +23,17 @@ export default function EditLeavePage() {
       try {
         const found = await leaveApi.getById(id);
         if (found) {
+          // IDOR check: employees can only view their own leave requests
+          if (!isAdmin && !isManager && session) {
+            const ownerName = found.employee?.name?.toLowerCase();
+            const userName = session.displayName?.toLowerCase();
+            const userLogin = session.username?.toLowerCase();
+            if (ownerName !== userName && ownerName !== userLogin) {
+              toast.error("You can only view your own leave requests");
+              router.push("/my-leave");
+              return;
+            }
+          }
           setRequest(found);
         } else {
           toast.error("Leave request not found");
@@ -37,7 +48,7 @@ export default function EditLeavePage() {
       }
     }
     fetchRequest();
-  }, [params.id, router]);
+  }, [params.id, router, isAdmin, isManager, session]);
 
   const canEdit = request?.status === "PENDING";
   const canCancel = request?.status === "PENDING";
