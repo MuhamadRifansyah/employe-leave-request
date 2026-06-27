@@ -36,8 +36,8 @@ import { useEffect, useState } from "react";
 
 /* ─────────────────────── Data ─────────────────────── */
 
-const SCORE = 78;
-const AUDIT_DATE = "22 Juni 2026";
+const SCORE = 80;
+const AUDIT_DATE = "27 Juni 2026";
 const STACK = "Next.js 16.2.9 • TypeScript • Tailwind v4 • Prisma 7 • PostgreSQL (Supabase) • Vercel";
 
 interface ScoreCategory {
@@ -50,15 +50,15 @@ interface ScoreCategory {
 
 const scoreCategories: ScoreCategory[] = [
   { label: "Build & TypeScript", score: 10, max: 10, icon: Terminal, status: "pass" },
-  { label: "Routing & Navigation", score: 9, max: 10, icon: Layout, status: "pass" },
+  { label: "Routing & Navigation", score: 10, max: 10, icon: Layout, status: "pass" },
   { label: "Proxy / Middleware", score: 9, max: 10, icon: Globe, status: "pass" },
   { label: "Error & Loading States", score: 9, max: 10, icon: Activity, status: "pass" },
   { label: "API Correctness", score: 8, max: 10, icon: Server, status: "pass" },
   { label: "Data Integrity", score: 8, max: 10, icon: Database, status: "pass" },
-  { label: "Code Quality", score: 7, max: 10, icon: Code2, status: "pass" },
+  { label: "Code Quality", score: 8, max: 10, icon: Code2, status: "pass" },
   { label: "Performance", score: 6, max: 10, icon: Zap, status: "warn" },
   { label: "Security (Auth Model)", score: 5, max: 10, icon: ShieldCheck, status: "warn" },
-  { label: "API Authentication", score: 3, max: 10, icon: Lock, status: "fail" },
+  { label: "API Authentication", score: 7, max: 10, icon: Lock, status: "pass" },
 ];
 
 interface FixItem {
@@ -70,6 +70,13 @@ interface FixItem {
 }
 
 const fixesApplied: FixItem[] = [
+  {
+    severity: "critical",
+    title: "Audit Report Blocked by Proxy (Tidak Bisa Dibuka)",
+    problem: "/report route tidak ada di PUBLIC_ROUTES pada proxy.ts. Saat user klik 'View Audit Report' dari halaman login, proxy redirect kembali ke /login karena tidak ada auth cookie.",
+    fix: "Menambahkan '/report' ke array PUBLIC_ROUTES di proxy.ts agar halaman audit report bisa diakses tanpa login",
+    files: ["src/proxy.ts"],
+  },
   {
     severity: "critical",
     title: "Middleware Not Using Shared Constants",
@@ -161,16 +168,16 @@ const recommendations: Recommendation[] = [
   {
     priority: 1,
     severity: "critical",
-    title: "API Route Authentication",
-    description: "All API routes are publicly accessible. Anyone can call /api/employees, /api/leave, etc. without authentication.",
-    impact: "Adding server-side auth validation would raise score to ~85/100",
+    title: "Signed Session Cookie",
+    description: "Auth cookie masih base64-encoded JSON tanpa tanda tangan kriptografis. Attacker bisa memalsukan session apa pun.",
+    impact: "Beralih ke HMAC-SHA256 signed cookies akan menaikkan skor ke ~88/100",
   },
   {
     priority: 2,
-    severity: "critical",
-    title: "Signed Session Cookie",
-    description: "Auth cookie is base64-encoded JSON with no cryptographic signature. An attacker can forge any session.",
-    impact: "Switching to HMAC-SHA256 signed cookies would raise score to ~90/100",
+    severity: "high",
+    title: "HttpOnly Cookie Migration",
+    description: "Cookie diset via document.cookie (client-side) sehingga tidak bisa HttpOnly. Rentan terhadap XSS cookie theft.",
+    impact: "Memindahkan auth ke server-side API route akan mengaktifkan full cookie security",
   },
   {
     priority: 3,
@@ -189,16 +196,9 @@ const recommendations: Recommendation[] = [
   {
     priority: 5,
     severity: "medium",
-    title: "Cookie Security Flags",
-    description: "Cookie set via document.cookie (client-side) — can't be HttpOnly. Missing Secure flag.",
-    impact: "Moving auth to server-side API route would enable full cookie security",
-  },
-  {
-    priority: 6,
-    severity: "medium",
     title: "Minor Improvements",
-    description: "@types/uuid version mismatch, shadcn in dependencies instead of devDependencies, CSS delay-* conflicts.",
-    impact: "Package cleanup and CSS fixes for best practices",
+    description: "@types/uuid version mismatch, shadcn harusnya di devDependencies bukan dependencies, CSS delay-* conflicts.",
+    impact: "Package cleanup dan CSS fixes untuk best practices",
   },
 ];
 

@@ -4,7 +4,7 @@ import { AUTH_COOKIE_NAME, ROUTE_PERMISSIONS } from "@/constants";
 import type { RoleName } from "@/constants";
 
 // Routes that don't require authentication
-const PUBLIC_ROUTES = ["/login"];
+const PUBLIC_ROUTES = ["/login", "/report"];
 
 function parseAuthCookie(
   cookieValue: string
