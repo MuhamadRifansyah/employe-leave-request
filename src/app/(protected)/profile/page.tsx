@@ -114,11 +114,13 @@ function ProfileEditForm({
   displayName: initialName,
   email: initialEmail,
   userId,
+  employeeId,
   onSave,
 }: {
   displayName: string;
   email: string;
   userId: string;
+  employeeId?: string;
   onSave: (name: string, email: string) => void;
 }) {
   const [isEditing, setIsEditing] = useState(false);
@@ -140,6 +142,16 @@ function ProfileEditForm({
       if (currentSession) {
         currentSession.displayName = name.trim();
         saveSession(currentSession);
+      }
+
+      // Sync name to employee record in DB so user↔employee matching stays intact
+      if (employeeId && name.trim() !== initialName) {
+        try {
+          await employeeApi.update(employeeId, { name: name.trim() });
+        } catch {
+          // Non-fatal: localStorage is updated, DB sync failed
+          console.error("Failed to sync employee name to DB");
+        }
       }
 
       onSave(name.trim(), email.trim());
@@ -662,6 +674,7 @@ export default function ProfilePage() {
                     displayName={displayName}
                     email={email}
                     userId={session?.userId || ""}
+                    employeeId={employee?.id}
                     onSave={handleProfileSave}
                   />
                   <ChangePasswordForm userId={session?.userId || ""} />
