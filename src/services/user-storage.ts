@@ -1,7 +1,7 @@
 import type { AuthUser } from "@/types";
 import { storage } from "@/lib/storage";
 import { generateId } from "@/lib/utils";
-import { generateSalt, hashPassword } from "@/lib/auth";
+// Password hashing removed — auth is now server-side
 import { STORAGE_KEYS, ROLES } from "@/constants";
 import type { RoleName } from "@/constants";
 
@@ -44,7 +44,7 @@ const SEED_USERS: {
  * Runs once on first app load, then cached.
  */
 let seedInitialized = false;
-const SEED_VERSION = "2"; // Bump this when seed user data changes
+const SEED_VERSION = "3"; // Bumped: auth is now server-side, no password hashes stored
 
 export async function initializeSeedUsers(): Promise<void> {
   if (seedInitialized) return;
@@ -62,27 +62,20 @@ export async function initializeSeedUsers(): Promise<void> {
   if (currentVersion !== SEED_VERSION) {
     storage.remove(STORAGE_KEYS.USERS);
     storage.remove(STORAGE_KEYS.AUTH_SESSION);
-    // Clear auth cookie so user re-logs with updated data
-    if (typeof document !== "undefined") {
-      document.cookie = "auth_session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Strict";
-    }
   }
 
   const now = new Date().toISOString();
   const users: AuthUser[] = [];
 
   for (const seed of SEED_USERS) {
-    const salt = generateSalt();
-    const hash = await hashPassword(seed.password, salt);
-
     users.push({
       id: generateId(),
       username: seed.username,
       email: seed.email,
       role: seed.role,
       displayName: seed.displayName,
-      passwordHash: hash,
-      salt,
+      passwordHash: '', // Auth is now server-side
+      salt: '',
       isActive: true,
       createdAt: now,
       updatedAt: now,
@@ -136,8 +129,6 @@ export const userStorage = {
       throw new Error("Username already exists");
     }
 
-    const salt = generateSalt();
-    const hash = await hashPassword(data.password, salt);
     const now = new Date().toISOString();
 
     const newUser: AuthUser = {
@@ -146,8 +137,8 @@ export const userStorage = {
       email: data.email,
       role: data.role,
       displayName: data.displayName,
-      passwordHash: hash,
-      salt,
+      passwordHash: '', // Auth is now server-side
+      salt: '',
       isActive: true,
       createdAt: now,
       updatedAt: now,
@@ -175,22 +166,10 @@ export const userStorage = {
     return users[index];
   },
 
-  async updatePassword(id: string, newPassword: string): Promise<boolean> {
-    const users = getAll();
-    const index = users.findIndex((u) => u.id === id);
-    if (index === -1) return false;
-
-    const salt = generateSalt();
-    const hash = await hashPassword(newPassword, salt);
-
-    users[index] = {
-      ...users[index],
-      passwordHash: hash,
-      salt,
-      updatedAt: new Date().toISOString(),
-    };
-    saveAll(users);
-    return true;
+  async updatePassword(_id: string, _newPassword: string): Promise<boolean> {
+    // Password management is now server-side
+    // This method is kept for interface compatibility but is a no-op
+    return false;
   },
 
   delete(id: string): boolean {

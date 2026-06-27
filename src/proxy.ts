@@ -2,19 +2,15 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { AUTH_COOKIE_NAME, ROUTE_PERMISSIONS } from "@/constants";
 import type { RoleName } from "@/constants";
+import { verifyPayload } from "@/lib/signed-cookie";
 
 // Routes that don't require authentication
 const PUBLIC_ROUTES = ["/login", "/report"];
 
-function parseAuthCookie(
-  cookieValue: string
-): { userId: string; role: string; expiresAt: string } | null {
-  try {
-    const decoded = atob(cookieValue);
-    return JSON.parse(decoded);
-  } catch {
-    return null;
-  }
+interface SessionPayload {
+  userId: string;
+  role: string;
+  expiresAt: string;
 }
 
 function findMatchingRoute(pathname: string): string | null {
@@ -33,7 +29,7 @@ function findMatchingRoute(pathname: string): string | null {
   return null;
 }
 
-export function proxy(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Allow public routes
@@ -53,7 +49,12 @@ export function proxy(request: NextRequest) {
   // Handle API routes — inject auth headers or reject
   if (pathname.startsWith("/api")) {
     // Public API routes that don't need auth
-    const PUBLIC_API_ROUTES = ["/api/activity/auth", "/api/health"];
+    const PUBLIC_API_ROUTES = [
+      "/api/activity/auth",
+      "/api/health",
+      "/api/auth/login",
+      "/api/auth/logout",
+    ];
     if (PUBLIC_API_ROUTES.some((route) => pathname === route || pathname.startsWith(route + "/"))) {
       return NextResponse.next();
     }
@@ -66,7 +67,8 @@ export function proxy(request: NextRequest) {
       );
     }
 
-    const apiSession = parseAuthCookie(apiAuthCookie.value);
+    // Verify the HMAC-signed session cookie
+    const apiSession = await verifyPayload<SessionPayload>(apiAuthCookie.value);
     if (!apiSession || new Date(apiSession.expiresAt) < new Date()) {
       return NextResponse.json(
         { error: "Session expired" },
@@ -93,7 +95,8 @@ export function proxy(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  const session = parseAuthCookie(authCookie.value);
+  // Verify the HMAC-signed session cookie
+  const session = await verifyPayload<SessionPayload>(authCookie.value);
 
   if (!session) {
     const response = NextResponse.redirect(new URL("/login", request.url));

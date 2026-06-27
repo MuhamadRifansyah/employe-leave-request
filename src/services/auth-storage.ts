@@ -1,17 +1,16 @@
 import type { AuthSession, AuthUser, LoginResult } from "@/types";
-import { verifyPassword } from "@/lib/auth";
 import {
   saveSession,
   getSession,
   clearSession,
   isAuthenticated,
-  createExpiryTimestamp,
 } from "@/lib/session";
 import { userStorage, initializeSeedUsers } from "@/services/user-storage";
 
 /**
  * Authentication service.
  * Handles login, logout, and session management with role-based access.
+ * Auth verification is performed server-side; the client only stores display data.
  */
 export const authStorage = {
   /**
@@ -23,54 +22,52 @@ export const authStorage = {
   },
 
   /**
-   * Authenticate a user with username and password.
-   * Returns a LoginResult with session data on success.
+   * Authenticate a user via the server API.
+   * The server sets an HttpOnly cookie; we save display data to localStorage.
    */
   async login(username: string, password: string): Promise<LoginResult> {
-    await initializeSeedUsers();
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password }),
+      });
 
-    const user = userStorage.getByUsername(username);
+      if (!response.ok) {
+        const data = await response.json();
+        return { success: false, session: null, error: data.error || 'Invalid credentials' };
+      }
 
-    if (!user) {
-      return { success: false, session: null, error: "Invalid credentials" };
-    }
+      const user = await response.json();
 
-    if (!user.isActive) {
-      return {
-        success: false,
-        session: null,
-        error: "Account is deactivated. Contact your administrator.",
+      // Cookie is set by server (HttpOnly), just save display data to localStorage
+      const session: AuthSession = {
+        userId: user.userId,
+        username: user.username,
+        role: user.role,
+        displayName: user.displayName,
+        isAuthenticated: true,
+        loginAt: new Date().toISOString(),
+        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
       };
+
+      saveSession(session);
+      return { success: true, session };
+    } catch {
+      return { success: false, session: null, error: 'Network error. Please try again.' };
     }
-
-    const isValid = await verifyPassword(
-      password,
-      user.passwordHash,
-      user.salt
-    );
-
-    if (!isValid) {
-      return { success: false, session: null, error: "Invalid credentials" };
-    }
-
-    const session: AuthSession = {
-      userId: user.id,
-      username: user.username,
-      role: user.role,
-      displayName: user.displayName,
-      isAuthenticated: true,
-      loginAt: new Date().toISOString(),
-      expiresAt: createExpiryTimestamp(),
-    };
-
-    saveSession(session);
-    return { success: true, session };
   },
 
   /**
-   * Log out the current user. Clears both localStorage and cookie.
+   * Log out the current user. Calls server to clear HttpOnly cookie,
+   * then clears localStorage session data.
    */
-  logout(): void {
+  async logout(): Promise<void> {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+    } catch {
+      // Ignore network errors during logout
+    }
     clearSession();
   },
 

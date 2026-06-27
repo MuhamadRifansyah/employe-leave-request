@@ -43,7 +43,7 @@ export function useAuth() {
     [router]
   );
 
-  const logout = useCallback(() => {
+  const logout = useCallback(async () => {
     // Log logout activity (fire-and-forget)
     if (session) {
       fetch("/api/activity/auth", {
@@ -52,7 +52,7 @@ export function useAuth() {
         body: JSON.stringify({ action: "LOGOUT", userId: session.userId, userName: session.displayName }),
       }).catch(() => {});
     }
-    authStorage.logout();
+    await authStorage.logout();
     setSession(null);
     router.push("/login");
   }, [router, session]);

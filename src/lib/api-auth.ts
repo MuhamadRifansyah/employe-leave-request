@@ -1,5 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 
+// --------------------------------------------------------------------------
+// Trust model:
+//
+// The `x-user-id` and `x-user-role` headers are injected by the proxy
+// (src/proxy.ts) AFTER it has verified the HMAC-signed session cookie.
+// Direct API access that bypasses the proxy will NOT have these headers,
+// so unauthenticated requests are correctly rejected.
+//
+// In production, consider also verifying the signed cookie directly in API
+// routes for defence-in-depth.
+// --------------------------------------------------------------------------
+
 export interface AuthContext {
   userId: string;
   role: string;

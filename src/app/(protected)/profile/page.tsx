@@ -13,26 +13,21 @@ import {
   Mail,
   Shield,
   Clock,
-  CalendarDays,
   Pencil,
   Lock,
   Camera,
   Save,
   X,
-  Eye,
-  EyeOff,
   Building2,
   Briefcase,
   Wallet,
-  Ban,
   Loader2,
   CheckCircle,
 } from "lucide-react";
 import { leaveApi } from "@/services/leave-storage";
 import { employeeApi } from "@/services/employee-storage";
 import { userStorage } from "@/services/user-storage";
-import { authStorage } from "@/services/auth-storage";
-import { verifyPassword } from "@/lib/auth";
+
 import { saveSession, getSession } from "@/lib/session";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { cn } from "@/lib/utils";
@@ -230,174 +225,23 @@ function ProfileEditForm({
   );
 }
 
-/* ─────────────── Change Password ─────────────── */
+/* ─────────────── Change Password (Disabled — Server-side Auth) ─────────────── */
 
-function ChangePasswordForm({ userId }: { userId: string }) {
-  const [isOpen, setIsOpen] = useState(false);
-  const [currentPassword, setCurrentPassword] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [showCurrent, setShowCurrent] = useState(false);
-  const [showNew, setShowNew] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  const [errors, setErrors] = useState<Record<string, string>>({});
-
-  const validate = (): boolean => {
-    const errs: Record<string, string> = {};
-    if (!currentPassword) errs.currentPassword = "Current password is required";
-    if (!newPassword) errs.newPassword = "New password is required";
-    else if (newPassword.length < 6) errs.newPassword = "Password must be at least 6 characters";
-    if (newPassword !== confirmPassword) errs.confirmPassword = "Passwords do not match";
-    if (newPassword === currentPassword && currentPassword) errs.newPassword = "New password must be different";
-    setErrors(errs);
-    return Object.keys(errs).length === 0;
-  };
-
-  const handleSubmit = async () => {
-    if (!validate()) return;
-
-    setIsSaving(true);
-    try {
-      const user = userStorage.getById(userId);
-      if (!user) {
-        toast.error("User not found");
-        return;
-      }
-
-      const isValid = await verifyPassword(currentPassword, user.passwordHash, user.salt);
-      if (!isValid) {
-        setErrors({ currentPassword: "Current password is incorrect" });
-        return;
-      }
-
-      await userStorage.updatePassword(userId, newPassword);
-      toast.success("Password changed successfully");
-      setIsOpen(false);
-      setCurrentPassword("");
-      setNewPassword("");
-      setConfirmPassword("");
-      setErrors({});
-    } catch {
-      toast.error("Failed to change password");
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleCancel = () => {
-    setIsOpen(false);
-    setCurrentPassword("");
-    setNewPassword("");
-    setConfirmPassword("");
-    setErrors({});
-  };
-
-  if (!isOpen) {
-    return (
+function ChangePasswordForm({ userId: _userId }: { userId: string }) {
+  return (
+    <div className="flex items-center gap-2">
       <Button
         variant="outline"
         size="sm"
-        onClick={() => setIsOpen(true)}
-        className="rounded-xl gap-1.5 text-xs h-8"
+        disabled
+        className="rounded-xl gap-1.5 text-xs h-8 opacity-60"
       >
         <Lock className="h-3 w-3" />
         Change Password
       </Button>
-    );
-  }
-
-  return (
-    <div className="space-y-4 mt-4 p-4 rounded-xl bg-muted/20 border border-border/30 animate-fade-in-up">
-      <h4 className="text-sm font-semibold flex items-center gap-2">
-        <Lock className="h-4 w-4 text-primary" />
-        Change Password
-      </h4>
-
-      <div className="space-y-3">
-        {/* Current Password */}
-        <div className="space-y-1.5">
-          <Label htmlFor="currentPassword" className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-            Current Password
-          </Label>
-          <div className="relative">
-            <Input
-              id="currentPassword"
-              type={showCurrent ? "text" : "password"}
-              value={currentPassword}
-              onChange={(e) => { setCurrentPassword(e.target.value); setErrors((p) => ({ ...p, currentPassword: "" })); }}
-              className={cn("h-10 rounded-xl bg-background/60 border-border/50 pr-10", errors.currentPassword && "border-destructive")}
-            />
-            <button
-              type="button"
-              onClick={() => setShowCurrent(!showCurrent)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-            >
-              {showCurrent ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-            </button>
-          </div>
-          {errors.currentPassword && <p className="text-xs text-destructive">{errors.currentPassword}</p>}
-        </div>
-
-        {/* New Password */}
-        <div className="space-y-1.5">
-          <Label htmlFor="newPassword" className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-            New Password
-          </Label>
-          <div className="relative">
-            <Input
-              id="newPassword"
-              type={showNew ? "text" : "password"}
-              value={newPassword}
-              onChange={(e) => { setNewPassword(e.target.value); setErrors((p) => ({ ...p, newPassword: "" })); }}
-              className={cn("h-10 rounded-xl bg-background/60 border-border/50 pr-10", errors.newPassword && "border-destructive")}
-            />
-            <button
-              type="button"
-              onClick={() => setShowNew(!showNew)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-            >
-              {showNew ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-            </button>
-          </div>
-          {errors.newPassword && <p className="text-xs text-destructive">{errors.newPassword}</p>}
-          {newPassword && newPassword.length >= 6 && (
-            <div className="flex items-center gap-1 text-xs text-emerald-500">
-              <CheckCircle className="h-3 w-3" /> Password strength: OK
-            </div>
-          )}
-        </div>
-
-        {/* Confirm Password */}
-        <div className="space-y-1.5">
-          <Label htmlFor="confirmPassword" className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-            Confirm New Password
-          </Label>
-          <Input
-            id="confirmPassword"
-            type="password"
-            value={confirmPassword}
-            onChange={(e) => { setConfirmPassword(e.target.value); setErrors((p) => ({ ...p, confirmPassword: "" })); }}
-            className={cn("h-10 rounded-xl bg-background/60 border-border/50", errors.confirmPassword && "border-destructive")}
-          />
-          {errors.confirmPassword && <p className="text-xs text-destructive">{errors.confirmPassword}</p>}
-        </div>
-      </div>
-
-      <div className="flex items-center gap-2 pt-1">
-        <Button
-          size="sm"
-          onClick={handleSubmit}
-          disabled={isSaving}
-          className="rounded-xl gap-1.5 text-xs h-8 shadow-lg shadow-primary/20"
-        >
-          {isSaving ? <Loader2 className="h-3 w-3 animate-spin" /> : <Lock className="h-3 w-3" />}
-          Update Password
-        </Button>
-        <Button variant="ghost" size="sm" onClick={handleCancel} className="rounded-xl gap-1.5 text-xs h-8">
-          <X className="h-3 w-3" />
-          Cancel
-        </Button>
-      </div>
+      <span className="text-xs text-muted-foreground">
+        Managed by administrator
+      </span>
     </div>
   );
 }

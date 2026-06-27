@@ -1,31 +1,19 @@
 import type { AuthSession } from "@/types";
 import { storage } from "@/lib/storage";
-import { STORAGE_KEYS, AUTH_COOKIE_NAME, SESSION_DURATION_MS } from "@/constants";
+import { STORAGE_KEYS, SESSION_DURATION_MS } from "@/constants";
 
 /**
  * Session management utilities.
- * Uses localStorage for full client-side session data and cookies
- * for Next.js middleware route protection (server-side).
+ * Uses localStorage for client-side display data.
+ * Auth cookies are HttpOnly and managed by the server.
  */
 
 /**
- * Save session to both localStorage and a cookie.
+ * Save session display data to localStorage.
+ * The auth cookie is HttpOnly and set by the server.
  */
 export function saveSession(session: AuthSession): void {
   storage.set(STORAGE_KEYS.AUTH_SESSION, session);
-
-  // Set a cookie for Next.js middleware (server-side route protection)
-  if (typeof document !== "undefined") {
-    const cookieValue = btoa(
-      JSON.stringify({
-        userId: session.userId,
-        role: session.role,
-        expiresAt: session.expiresAt,
-      })
-    );
-    const expires = new Date(session.expiresAt).toUTCString();
-    document.cookie = `${AUTH_COOKIE_NAME}=${cookieValue}; path=/; expires=${expires}; SameSite=Strict`;
-  }
 }
 
 /**
@@ -49,14 +37,11 @@ export function getSession(): AuthSession | null {
 }
 
 /**
- * Clear session from both localStorage and cookie.
+ * Clear session display data from localStorage.
+ * The server logout API handles clearing the HttpOnly cookie.
  */
 export function clearSession(): void {
   storage.remove(STORAGE_KEYS.AUTH_SESSION);
-
-  if (typeof document !== "undefined") {
-    document.cookie = `${AUTH_COOKIE_NAME}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Strict`;
-  }
 }
 
 /**
