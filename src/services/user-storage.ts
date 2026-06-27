@@ -27,14 +27,14 @@ const SEED_USERS: {
     username: "manager",
     email: "manager@leavely.app",
     role: ROLES.MANAGER,
-    displayName: "Sarah Johnson",
+    displayName: "Siti Rahayu",
     password: "manager123",
   },
   {
     username: "employee",
     email: "employee@leavely.app",
     role: ROLES.EMPLOYEE,
-    displayName: "John Doe",
+    displayName: "Ahmad Fauzi",
     password: "employee123",
   },
 ];
@@ -44,15 +44,28 @@ const SEED_USERS: {
  * Runs once on first app load, then cached.
  */
 let seedInitialized = false;
+const SEED_VERSION = "2"; // Bump this when seed user data changes
 
 export async function initializeSeedUsers(): Promise<void> {
   if (seedInitialized) return;
   if (typeof window === "undefined") return;
 
+  const currentVersion = storage.get<string>("seed_version", "0");
   const existing = storage.get<AuthUser[]>(STORAGE_KEYS.USERS, []);
-  if (existing.length > 0) {
+
+  if (existing.length > 0 && currentVersion === SEED_VERSION) {
     seedInitialized = true;
     return;
+  }
+
+  // Clear stale data when seed version changes
+  if (currentVersion !== SEED_VERSION) {
+    storage.remove(STORAGE_KEYS.USERS);
+    storage.remove(STORAGE_KEYS.AUTH_SESSION);
+    // Clear auth cookie so user re-logs with updated data
+    if (typeof document !== "undefined") {
+      document.cookie = "auth_session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Strict";
+    }
   }
 
   const now = new Date().toISOString();
@@ -77,6 +90,7 @@ export async function initializeSeedUsers(): Promise<void> {
   }
 
   storage.set(STORAGE_KEYS.USERS, users);
+  storage.set("seed_version", SEED_VERSION);
   seedInitialized = true;
 }
 
