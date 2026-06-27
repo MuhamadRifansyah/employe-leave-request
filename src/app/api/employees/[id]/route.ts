@@ -91,7 +91,7 @@ export async function PUT(
       },
     });
 
-    ActivityLogger.employee.updated(employee.name, employee.id, { name, department, position });
+    ActivityLogger.employee.updated(employee.name, employee.id, { name, department, position }, auth.userId);
 
     return NextResponse.json({ data: serialize(employee) });
   } catch (error) {
@@ -128,7 +128,7 @@ export async function DELETE(
       where: { id },
     });
 
-    ActivityLogger.employee.deleted(existing.name, existing.id);
+    ActivityLogger.employee.deleted(existing.name, existing.id, auth.userId);
 
     return NextResponse.json({ success: true });
   } catch (error) {

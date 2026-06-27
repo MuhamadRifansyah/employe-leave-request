@@ -13,6 +13,8 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const status = searchParams.get("status");
     const employeeId = searchParams.get("employeeId");
+    const pageParam = searchParams.get("page");
+    const pageSizeParam = searchParams.get("pageSize");
 
     const where: {
       status?: LeaveStatus;
@@ -27,6 +29,33 @@ export async function GET(request: NextRequest) {
       where.employeeId = employeeId;
     }
 
+    // Paginated mode
+    if (pageParam) {
+      const page = Math.max(1, parseInt(pageParam, 10) || 1);
+      const pageSize = Math.min(Math.max(1, parseInt(pageSizeParam || "50", 10) || 50), 100);
+      const skip = (page - 1) * pageSize;
+
+      const [leaveRequests, total] = await Promise.all([
+        prisma.leaveRequest.findMany({
+          where,
+          orderBy: { createdAt: "desc" },
+          skip,
+          take: pageSize,
+          include: { employee: { select: { name: true, department: true } } },
+        }),
+        prisma.leaveRequest.count({ where }),
+      ]);
+
+      return NextResponse.json({
+        data: serializeArray(leaveRequests),
+        total,
+        page,
+        pageSize,
+        totalPages: Math.ceil(total / pageSize),
+      });
+    }
+
+    // Non-paginated mode (backward compatible)
     const leaveRequests = await prisma.leaveRequest.findMany({
       where,
       orderBy: { createdAt: "desc" },
@@ -119,39 +148,44 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check for overlapping leave requests (PENDING or APPROVED)
-    const existingLeaves = await prisma.leaveRequest.findMany({
-      where: {
-        employeeId,
-        status: { in: [LeaveStatus.PENDING, LeaveStatus.APPROVED] },
-      },
-      select: { startDate: true, endDate: true },
+    // Check for overlapping leave requests and create atomically
+    const leaveRequest = await prisma.$transaction(async (tx) => {
+      const existingLeaves = await tx.leaveRequest.findMany({
+        where: {
+          employeeId,
+          status: { in: [LeaveStatus.PENDING, LeaveStatus.APPROVED] },
+        },
+        select: { startDate: true, endDate: true },
+      });
+
+      const hasOverlap = existingLeaves.some((leave) => {
+        const existingStart = new Date(leave.startDate);
+        const existingEnd = new Date(leave.endDate);
+        return startDateObj <= existingEnd && endDateObj >= existingStart;
+      });
+
+      if (hasOverlap) {
+        throw new Error('OVERLAP:This leave request overlaps with an existing pending or approved leave');
+      }
+
+      return tx.leaveRequest.create({
+        data: { employeeId, startDate, endDate, reason },
+      });
     });
 
-    const hasOverlap = existingLeaves.some((leave) => {
-      const existingStart = new Date(leave.startDate);
-      const existingEnd = new Date(leave.endDate);
-      return startDateObj <= existingEnd && endDateObj >= existingStart;
-    });
-
-    if (hasOverlap) {
-      return NextResponse.json(
-        { error: "This leave request overlaps with an existing pending or approved leave" },
-        { status: 409 }
-      );
-    }
-
-    const leaveRequest = await prisma.leaveRequest.create({
-      data: { employeeId, startDate, endDate, reason },
-    });
-
-    ActivityLogger.leave.created(employee.name, leaveRequest.id, startDate, endDate);
+    ActivityLogger.leave.created(employee.name, leaveRequest.id, startDate, endDate, auth.userId);
 
     return NextResponse.json(
       { data: serialize(leaveRequest) },
       { status: 201 }
     );
   } catch (error) {
+    if (error instanceof Error && error.message.startsWith("OVERLAP:")) {
+      return NextResponse.json(
+        { error: error.message.replace("OVERLAP:", "") },
+        { status: 409 }
+      );
+    }
     console.error("Failed to create leave request:", error);
     return NextResponse.json(
       { error: "Failed to create leave request" },

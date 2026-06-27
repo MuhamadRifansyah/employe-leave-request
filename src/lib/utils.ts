@@ -20,7 +20,7 @@ export function formatDate(dateString: string): string {
 }
 
 export function calculateDuration(startDate: string, endDate: string): number {
-  return differenceInCalendarDays(new Date(endDate), new Date(startDate));
+  return differenceInCalendarDays(new Date(endDate), new Date(startDate)) + 1;
 }
 
 /**

@@ -32,7 +32,7 @@ async function main() {
       name: "Siti Rahayu",
       department: "Marketing",
       position: "Marketing Manager",
-      leaveBalance: 10,
+      leaveBalance: 7,
     },
   });
 
@@ -59,7 +59,7 @@ async function main() {
       name: "Rudi Hartono",
       department: "Finance",
       position: "Accountant",
-      leaveBalance: 8,
+      leaveBalance: 3,
     },
   });
 

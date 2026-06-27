@@ -119,33 +119,47 @@ export async function PATCH(
               (1000 * 60 * 60 * 24)
           ) + 1;
 
-        if (existing.employee.leaveBalance < duration) {
-          return NextResponse.json(
-            {
-              error: `Insufficient leave balance (${existing.employee.leaveBalance} days available, ${duration} days requested)`,
-            },
-            { status: 400 }
-          );
+        try {
+          const updatedRequest = await prisma.$transaction(async (tx) => {
+            const emp = await tx.employee.findUniqueOrThrow({
+              where: { id: existing.employee.id },
+            });
+
+            if (emp.leaveBalance < duration) {
+              throw new Error(
+                `INSUFFICIENT_BALANCE:Insufficient leave balance (${emp.leaveBalance} days available, ${duration} days requested)`
+              );
+            }
+
+            const updated = await tx.leaveRequest.update({
+              where: { id },
+              data: {
+                status: LeaveStatus.APPROVED,
+                reviewedBy: auth.userId,
+                reviewedAt: new Date(),
+              },
+            });
+
+            await tx.employee.update({
+              where: { id: existing.employee.id },
+              data: { leaveBalance: { decrement: duration } },
+            });
+
+            return updated;
+          });
+
+          ActivityLogger.leave.approved(existing.employee.name, id, auth.userId);
+
+          return NextResponse.json({ data: serialize(updatedRequest) });
+        } catch (err) {
+          if (err instanceof Error && err.message.startsWith('INSUFFICIENT_BALANCE:')) {
+            return NextResponse.json(
+              { error: err.message.replace('INSUFFICIENT_BALANCE:', '') },
+              { status: 400 }
+            );
+          }
+          throw err;
         }
-
-        const [updatedRequest] = await prisma.$transaction([
-          prisma.leaveRequest.update({
-            where: { id },
-            data: {
-              status: LeaveStatus.APPROVED,
-              reviewedBy: auth.userId,
-              reviewedAt: new Date(),
-            },
-          }),
-          prisma.employee.update({
-            where: { id: existing.employee.id },
-            data: { leaveBalance: { decrement: duration } },
-          }),
-        ]);
-
-        ActivityLogger.leave.approved(existing.employee.name, id);
-
-        return NextResponse.json({ data: serialize(updatedRequest) });
       }
 
       // REJECTED or CANCELLED
@@ -162,9 +176,9 @@ export async function PATCH(
       });
 
       if (status === LeaveStatus.REJECTED) {
-        ActivityLogger.leave.rejected(existing.employee.name, id);
+        ActivityLogger.leave.rejected(existing.employee.name, id, auth.userId);
       } else {
-        ActivityLogger.leave.cancelled(existing.employee.name, id);
+        ActivityLogger.leave.cancelled(existing.employee.name, id, auth.userId);
       }
       return NextResponse.json({ data: serialize(updatedRequest) });
     }
@@ -182,6 +196,36 @@ export async function PATCH(
         return NextResponse.json(
           { error: "Only pending requests can be edited" },
           { status: 400 }
+        );
+      }
+
+      const newStartDate = body.startDate ? new Date(body.startDate) : new Date(existing.startDate);
+      const newEndDate = body.endDate ? new Date(body.endDate) : new Date(existing.endDate);
+      const newStartStr = body.startDate || existing.startDate;
+      const newEndStr = body.endDate || existing.endDate;
+
+      if (newStartDate > newEndDate) {
+        return NextResponse.json(
+          { error: "Start date must be on or before end date" },
+          { status: 400 }
+        );
+      }
+
+      // Check for overlapping leave requests (exclude current request)
+      const overlapping = await prisma.leaveRequest.findFirst({
+        where: {
+          employeeId: existing.employeeId,
+          id: { not: id },
+          status: { in: [LeaveStatus.PENDING, LeaveStatus.APPROVED] },
+          startDate: { lte: newEndStr },
+          endDate: { gte: newStartStr },
+        },
+      });
+
+      if (overlapping) {
+        return NextResponse.json(
+          { error: "Updated dates overlap with an existing pending or approved leave" },
+          { status: 409 }
         );
       }
 
@@ -265,7 +309,7 @@ export async function DELETE(
       });
     }
 
-    ActivityLogger.leave.deleted(id);
+    ActivityLogger.leave.deleted(id, auth.userId);
 
     return NextResponse.json({ success: true });
   } catch (error) {

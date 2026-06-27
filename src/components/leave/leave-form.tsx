@@ -85,7 +85,7 @@ export function LeaveForm({ onSubmit, backHref = "/leave", fixedEmployeeId, fixe
     );
   }
 
-  if (employees.length === 0) {
+  if (!fixedEmployeeId && employees.length === 0) {
     return (
       <Card className="max-w-2xl border-border/50 bg-card/80 backdrop-blur-sm animate-fade-in-up">
         <div className="p-8">

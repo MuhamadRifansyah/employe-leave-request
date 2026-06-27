@@ -8,12 +8,23 @@ import { Card } from "@/components/ui/card";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { EmptyState } from "@/components/shared/empty-state";
 import { StatusBadge } from "@/components/shared/status-badge";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from "@/components/ui/alert-dialog";
+import { Textarea } from "@/components/ui/textarea";
 import type { LeaveRequest, Employee } from "@/types";
 import { CalendarDays, Check, X, Trash2, Pencil, Ban, Eye } from "lucide-react";
 import { formatDate, calculateDuration } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 import { getInitials, getAvatarColor } from "@/lib/avatar";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { buttonVariants } from "@/components/ui/button";
 
@@ -21,7 +32,7 @@ interface LeaveTableProps {
   leaveRequests: LeaveRequest[];
   employees: Employee[];
   onApprove: (id: string) => void;
-  onReject: (id: string) => void;
+  onReject: (id: string, reason?: string) => void;
   onDelete: (id: string) => void;
   onCancel?: (id: string) => void;
   canApproveReject?: boolean;
@@ -40,6 +51,9 @@ export function LeaveTable({
   canDelete = false,
   editBasePath = "/leave/edit",
 }: LeaveTableProps) {
+  const [rejectingId, setRejectingId] = useState<string | null>(null);
+  const [rejectionReason, setRejectionReason] = useState('');
+
   const employeeMap = useMemo(() => {
     return employees.reduce((acc, emp) => {
       acc[emp.id] = emp;
@@ -133,22 +147,17 @@ export function LeaveTable({
                           variant="default"
                           onConfirm={() => onApprove(request.id)}
                         />
-                        <ConfirmDialog
-                          trigger={
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7 rounded-lg text-rose-600 hover:text-rose-700 hover:bg-rose-500/10"
-                            >
-                              <X className="h-3.5 w-3.5" />
-                            </Button>
-                          }
-                          title="Reject Leave"
-                          description={`Reject ${empName}'s leave request?`}
-                          confirmLabel="Reject"
-                          variant="destructive"
-                          onConfirm={() => onReject(request.id)}
-                        />
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 rounded-lg text-rose-600 hover:text-rose-700 hover:bg-rose-500/10"
+                          onClick={() => {
+                            setRejectingId(request.id);
+                            setRejectionReason('');
+                          }}
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </Button>
                       </>
                     )}
 
@@ -215,6 +224,44 @@ export function LeaveTable({
           {leaveRequests.length} {leaveRequests.length === 1 ? "request" : "requests"}
         </span>
       </div>
+
+      {/* Rejection Reason Dialog */}
+      <AlertDialog open={rejectingId !== null} onOpenChange={(open) => { if (!open) setRejectingId(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Reject Leave Request</AlertDialogTitle>
+            <AlertDialogDescription>
+              {rejectingId && employeeMap[leaveRequests.find(r => r.id === rejectingId)?.employeeId || '']?.name
+                ? `Reject ${employeeMap[leaveRequests.find(r => r.id === rejectingId)?.employeeId || '']?.name}'s leave request?`
+                : 'Are you sure you want to reject this leave request?'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="px-0 py-2">
+            <Textarea
+              placeholder="Reason for rejection (optional)..."
+              value={rejectionReason}
+              onChange={(e) => setRejectionReason(e.target.value)}
+              rows={3}
+              className="rounded-xl bg-background/60 border-border/50 resize-none"
+            />
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setRejectingId(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (rejectingId) {
+                  onReject(rejectingId, rejectionReason || undefined);
+                  setRejectingId(null);
+                  setRejectionReason('');
+                }
+              }}
+              className="bg-destructive text-white hover:bg-destructive/90"
+            >
+              Reject
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 }

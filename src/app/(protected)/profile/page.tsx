@@ -574,7 +574,7 @@ export default function ProfilePage() {
     { icon: UserCircle, label: "Username", value: session?.username || "—" },
     { icon: Mail, label: "Email", value: email || `${session?.username || "user"}@leavely.app` },
     { icon: Shield, label: "Role", value: roleLabel },
-    { icon: Clock, label: "Member Since", value: new Date().toLocaleDateString("en-US", { year: "numeric", month: "long" }) },
+    { icon: Clock, label: "Member Since", value: new Date(employee?.createdAt || Date.now()).toLocaleDateString("en-US", { year: "numeric", month: "long" }) },
   ];
 
   const employeeFields = employee

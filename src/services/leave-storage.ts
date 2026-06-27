@@ -45,13 +45,13 @@ export const leaveApi = {
     return created;
   },
 
-  async updateStatus(id: string, status: LeaveStatus): Promise<LeaveRequest> {
+  async updateStatus(id: string, status: LeaveStatus, rejectionReason?: string): Promise<LeaveRequest> {
     const { data: updated } = await fetchJson<{ data: LeaveRequest }>(
       `${BASE_URL}/${id}`,
       {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status }),
+        body: JSON.stringify({ status, ...(rejectionReason && { rejectionReason }) }),
       }
     );
     return updated;

@@ -98,7 +98,7 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    ActivityLogger.employee.created(employee.name, employee.id);
+    ActivityLogger.employee.created(employee.name, employee.id, auth.userId);
 
     return NextResponse.json({ data: serialize(employee) }, { status: 201 });
   } catch (error) {

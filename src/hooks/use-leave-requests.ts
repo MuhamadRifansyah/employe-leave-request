@@ -84,9 +84,9 @@ export function useLeaveRequests(employeeId?: string) {
   );
 
   const rejectRequest = useCallback(
-    async (id: string) => {
+    async (id: string, reason?: string) => {
       try {
-        await leaveApi.updateStatus(id, "REJECTED");
+        await leaveApi.updateStatus(id, "REJECTED", reason);
         toast.success("Leave request rejected");
         await refresh();
       } catch (err) {
